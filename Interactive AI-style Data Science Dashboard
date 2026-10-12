@@ -1,0 +1,104 @@
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+st.set_page_config(page_title='DataVision Analytics', page_icon='📊', layout='wide')
+
+@st.cache_data
+def load_data():
+    rng = np.random.default_rng(42)
+    n = 1200
+    dates = pd.to_datetime(rng.choice(pd.date_range('2025-01-01', '2025-12-31', freq='D'), size=n))
+    categories = ['Laptops', 'Smartphones', 'Accessories', 'Monitors', 'Audio']
+    products = {
+        'Laptops': ['NovaBook Pro', 'LiteBook Air', 'Creator X'],
+        'Smartphones': ['PixelOne', 'Galaxy Edge', 'Nova Phone'],
+        'Accessories': ['Wireless Mouse', 'Mechanical Keyboard', 'USB-C Hub'],
+        'Monitors': ['UltraView 27', 'StudioDisplay 32', 'WorkScreen 24'],
+        'Audio': ['SoundPods', 'Studio Headphones', 'Bluetooth Speaker']}
+    cat = rng.choice(categories, n, p=[.23, .25, .20, .16, .16])
+    region = rng.choice(['North', 'South', 'East', 'West', 'Central'], n)
+    segment = rng.choice(['Consumer', 'Corporate', 'Small Business'], n, p=[.58, .27, .15])
+    units = rng.choice([1, 2, 3, 4, 5], n, p=[.52, .25, .13, .07, .03])
+    base = {'Laptops': 950, 'Smartphones': 620, 'Accessories': 45, 'Monitors': 280, 'Audio': 120}
+    price = np.array([base[c] for c in cat]) * rng.uniform(.72, 1.35, n)
+    discount = rng.choice([0, .05, .10, .15, .20], n, p=[.30, .20, .25, .17, .08])
+    revenue = units * price * (1 - discount)
+    margin = np.array([{'Laptops': .19, 'Smartphones': .22, 'Accessories': .36, 'Monitors': .24, 'Audio': .31}[c] for c in cat])
+    profit = revenue * (margin + rng.normal(0, .035, n))
+    frame = pd.DataFrame({'Date': dates, 'Order ID': [f'ORD-{i:05d}' for i in range(1, n+1)],
+        'Region': region, 'Customer Segment': segment, 'Category': cat,
+        'Product': [rng.choice(products[c]) for c in cat], 'Units': units,
+        'Revenue': revenue.round(2), 'Profit': profit.round(2), 'Discount': discount})
+    frame['Month'] = frame['Date'].dt.to_period('M').dt.to_timestamp()
+    return frame
+
+df = load_data()
+st.title('📊 DataVision Analytics')
+st.caption('Interactive sales intelligence dashboard · Synthetic demonstration data')
+with st.sidebar:
+    st.header('Dashboard Filters')
+    selected_categories = st.multiselect('Product categories', sorted(df['Category'].unique()), default=sorted(df['Category'].unique()))
+    selected_regions = st.multiselect('Regions', sorted(df['Region'].unique()), default=sorted(df['Region'].unique()))
+    selected_segments = st.multiselect('Customer segments', sorted(df['Customer Segment'].unique()), default=sorted(df['Customer Segment'].unique()))
+    date_range = st.date_input('Date range', value=(df['Date'].min().date(), df['Date'].max().date()))
+    st.caption('Change the filters to update all metrics and charts.')
+filtered = df[df['Category'].isin(selected_categories) & df['Region'].isin(selected_regions) & df['Customer Segment'].isin(selected_segments)]
+if isinstance(date_range, tuple) and len(date_range) == 2:
+    start_date, end_date = date_range
+    filtered = filtered[(filtered['Date'].dt.date >= start_date) & (filtered['Date'].dt.date <= end_date)]
+if filtered.empty:
+    st.warning('No records match these filters. Select more categories, regions, or dates.')
+    st.stop()
+revenue, profit = filtered['Revenue'].sum(), filtered['Profit'].sum()
+k1, k2, k3, k4, k5 = st.columns(5)
+k1.metric('Total Revenue', f'${revenue:,.0f}')
+k2.metric('Total Profit', f'${profit:,.0f}')
+k3.metric('Orders', f"{filtered['Order ID'].nunique():,}")
+k4.metric('Average Order Value', f"${filtered['Revenue'].mean():,.0f}")
+k5.metric('Profit Margin', f'{profit/revenue:.1%}' if revenue else '—')
+st.divider()
+left, right = st.columns(2)
+with left:
+    st.subheader('Revenue & Profit Over Time')
+    monthly = filtered.groupby('Month')[['Revenue', 'Profit']].sum().sort_index()
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.plot(monthly.index, monthly['Revenue'], marker='o', label='Revenue', linewidth=2)
+    ax.plot(monthly.index, monthly['Profit'], marker='s', label='Profit', linewidth=2)
+    ax.set_ylabel('USD ($)'); ax.grid(alpha=.25); ax.legend(frameon=False); fig.autofmt_xdate()
+    st.pyplot(fig, use_container_width=True); plt.close(fig)
+with right:
+    st.subheader('Revenue by Category')
+    vals = filtered.groupby('Category')['Revenue'].sum().sort_values()
+    fig, ax = plt.subplots(figsize=(8, 4)); ax.barh(vals.index, vals.values)
+    ax.set_xlabel('USD ($)'); ax.grid(axis='x', alpha=.25)
+    st.pyplot(fig, use_container_width=True); plt.close(fig)
+left, right = st.columns(2)
+with left:
+    st.subheader('Regional Performance')
+    vals = filtered.groupby('Region')[['Revenue', 'Profit']].sum().sort_values('Revenue', ascending=False)
+    fig, ax = plt.subplots(figsize=(8, 4)); x = np.arange(len(vals)); width = .36
+    ax.bar(x-width/2, vals['Revenue'], width, label='Revenue'); ax.bar(x+width/2, vals['Profit'], width, label='Profit')
+    ax.set_xticks(x, vals.index); ax.set_ylabel('USD ($)'); ax.legend(frameon=False); ax.grid(axis='y', alpha=.25)
+    st.pyplot(fig, use_container_width=True); plt.close(fig)
+with right:
+    st.subheader('Customer Segment Mix')
+    vals = filtered.groupby('Customer Segment')['Revenue'].sum().sort_values(ascending=False)
+    fig, ax = plt.subplots(figsize=(8, 4)); ax.pie(vals.values, labels=vals.index, autopct='%1.1f%%', startangle=90); ax.axis('equal')
+    st.pyplot(fig, use_container_width=True); plt.close(fig)
+st.subheader('🤖 Automatic Business Insights')
+best_category = filtered.groupby('Category')['Revenue'].sum().idxmax()
+best_region = filtered.groupby('Region')['Revenue'].sum().idxmax()
+best_product = filtered.groupby('Product')['Revenue'].sum().idxmax()
+best_month = filtered.groupby('Month')['Revenue'].sum().idxmax()
+a, b = st.columns(2)
+a.info(f'**Top category:** {best_category}\n\nHighest revenue in the current selection.')
+b.info(f'**Leading region:** {best_region}\n\nHighest regional revenue in the current selection.')
+a, b = st.columns(2)
+a.success(f'**Top product:** {best_product}\n\nHighest product revenue in the current selection.')
+b.info(f'**Best month:** {best_month:%B %Y}\n\nHighest monthly revenue in the current selection.')
+st.subheader('Filtered Sales Records')
+st.dataframe(filtered.sort_values('Date', ascending=False), use_container_width=True, hide_index=True)
+st.download_button('⬇️ Download filtered data as CSV', filtered.to_csv(index=False).encode('utf-8'), 'filtered_sales_data.csv', 'text/csv')
+st.caption('All records are generated synthetic data, not actual company sales.')
