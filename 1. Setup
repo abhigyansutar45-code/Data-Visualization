@@ -1,0 +1,1 @@
+%pip install -q numpy pandas matplotlib seaborn plotly scikit-learn ipywidgets
