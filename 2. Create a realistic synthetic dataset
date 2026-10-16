@@ -1,0 +1,44 @@
+# Generate 2,400 synthetic order records over two years
+n = 2400
+dates = pd.date_range("2024-01-01", "2025-12-31", freq="D")
+order_dates = rng.choice(dates, size=n, replace=True)
+
+regions = np.array(["North", "South", "East", "West", "Central"])
+channels = np.array(["Online", "Retail", "Partner"])
+categories = np.array(["Technology", "Home", "Fashion", "Sports", "Beauty"])
+
+df = pd.DataFrame({
+    "order_id": [f"ORD-{i:05d}" for i in range(1, n + 1)],
+    "date": pd.to_datetime(order_dates),
+    "region": rng.choice(regions, size=n, p=[.23, .20, .18, .22, .17]),
+    "channel": rng.choice(channels, size=n, p=[.52, .31, .17]),
+    "category": rng.choice(categories, size=n),
+    "marketing_spend": rng.gamma(shape=4.0, scale=35.0, size=n),
+    "discount_pct": np.clip(rng.normal(12, 7, size=n), 0, 40),
+    "customer_satisfaction": np.clip(rng.normal(4.0, .65, size=n), 1, 5),
+    "units": rng.integers(1, 9, size=n),
+})
+
+# Simulated revenue relationship with seasonality and noise
+seasonality = 1 + 0.16 * np.sin(2 * np.pi * pd.to_datetime(df["date"]).dt.dayofyear / 365.25)
+region_factor = df["region"].map({"North": 1.10, "South": .94, "East": 1.00, "West": 1.14, "Central": .97})
+category_price = df["category"].map({"Technology": 240, "Home": 85, "Fashion": 55, "Sports": 72, "Beauty": 38})
+channel_factor = df["channel"].map({"Online": 1.08, "Retail": 1.00, "Partner": .92})
+noise = rng.lognormal(mean=0, sigma=.32, size=n)
+
+df["revenue"] = (
+    df["units"] * category_price * region_factor * channel_factor * seasonality
+    * (1 - df["discount_pct"] / 100) * noise
+    + df["marketing_spend"] * rng.uniform(0.3, 1.8, size=n)
+).round(2)
+
+# Add a few anomalies and missing values for realistic analysis practice
+anomaly_idx = rng.choice(df.index, size=12, replace=False)
+df.loc[anomaly_idx, "revenue"] *= rng.uniform(3.5, 7.0, size=len(anomaly_idx))
+for col, frac in [("customer_satisfaction", .025), ("marketing_spend", .015), ("discount_pct", .01)]:
+    miss_idx = rng.choice(df.index, size=int(n * frac), replace=False)
+    df.loc[miss_idx, col] = np.nan
+
+df = df.sort_values("date").reset_index(drop=True)
+display(df.head())
+print(f"Rows: {len(df):,} | Columns: {df.shape[1]}")
