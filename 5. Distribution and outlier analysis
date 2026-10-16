@@ -1,0 +1,19 @@
+fig, axes = plt.subplots(2, 2, figsize=(14, 9))
+sns.histplot(analysis_df["revenue"], bins=45, kde=True, ax=axes[0, 0])
+axes[0, 0].set_title("Revenue distribution")
+sns.histplot(analysis_df["marketing_spend"], bins=35, kde=True, ax=axes[0, 1])
+axes[0, 1].set_title("Marketing spend distribution")
+sns.boxplot(data=analysis_df, x="revenue", ax=axes[1, 0])
+axes[1, 0].set_title("Revenue box plot")
+sns.boxplot(data=analysis_df, x="discount_pct", ax=axes[1, 1])
+axes[1, 1].set_title("Discount percentage box plot")
+plt.tight_layout()
+plt.show()
+
+q1, q3 = analysis_df["revenue"].quantile([.25, .75])
+iqr = q3 - q1
+upper_fence = q3 + 1.5 * iqr
+revenue_outliers = analysis_df.loc[analysis_df["revenue"] > upper_fence, ["order_id", "date", "region", "category", "revenue"]]
+print(f"Revenue upper IQR fence: ${upper_fence:,.2f}")
+print(f"Orders above the fence: {len(revenue_outliers)} ({len(revenue_outliers)/len(analysis_df):.1%})")
+display(revenue_outliers.sort_values("revenue", ascending=False).head(10))
