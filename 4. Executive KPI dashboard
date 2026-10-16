@@ -1,0 +1,30 @@
+total_revenue = analysis_df["revenue"].sum()
+avg_order_revenue = analysis_df["revenue"].mean()
+median_order_revenue = analysis_df["revenue"].median()
+avg_satisfaction = analysis_df["customer_satisfaction"].mean()
+total_orders = analysis_df["order_id"].nunique()
+avg_discount = analysis_df["discount_pct"].mean()
+
+kpis = pd.DataFrame({
+    "Metric": ["Total revenue", "Orders", "Mean revenue/order", "Median revenue/order", "Mean satisfaction", "Mean discount"],
+    "Value": [
+        f"${total_revenue:,.0f}", f"{total_orders:,}", f"${avg_order_revenue:,.2f}",
+        f"${median_order_revenue:,.2f}", f"{avg_satisfaction:.2f} / 5", f"{avg_discount:.1f}%"
+    ]
+})
+display(kpis.style.hide(axis="index").set_properties(**{"font-size": "13pt"}))
+
+fig, axes = plt.subplots(1, 3, figsize=(16, 4))
+kpi_items = [
+    ("Total revenue", total_revenue, "${:,.0f}"),
+    ("Orders", total_orders, "{:,.0f}"),
+    ("Mean satisfaction", avg_satisfaction, "{:.2f}/5"),
+]
+for ax, (title, value, fmt) in zip(axes, kpi_items):
+    ax.axis("off")
+    ax.text(.5, .62, title, ha="center", va="center", fontsize=14, color="#64748b")
+    ax.text(.5, .38, fmt.format(value), ha="center", va="center", fontsize=24, weight="bold", color="#0f766e")
+    ax.add_patch(plt.Rectangle((.08, .15), .84, .68, fill=False, lw=1.5, ec="#cbd5e1", transform=ax.transAxes))
+plt.suptitle("Executive overview · Synthetic order data", fontsize=17, weight="bold")
+plt.tight_layout()
+plt.show()
