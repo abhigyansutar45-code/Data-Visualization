@@ -1,0 +1,17 @@
+diagnostics = pd.DataFrame({"actual": y_test, "predicted": pred})
+diagnostics["residual"] = diagnostics["actual"] - diagnostics["predicted"]
+
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+sns.scatterplot(data=diagnostics, x="actual", y="predicted", alpha=.6, ax=axes[0])
+max_val = max(diagnostics["actual"].max(), diagnostics["predicted"].max())
+axes[0].plot([0, max_val], [0, max_val], linestyle="--")
+axes[0].set_title("Actual vs predicted revenue")
+axes[0].set_xlabel("Actual ($)")
+axes[0].set_ylabel("Predicted ($)")
+
+sns.histplot(diagnostics["residual"], bins=35, kde=True, ax=axes[1])
+axes[1].axvline(0, linestyle="--")
+axes[1].set_title("Residual distribution")
+axes[1].set_xlabel("Actual − predicted ($)")
+plt.tight_layout()
+plt.show()
