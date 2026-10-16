@@ -1,0 +1,23 @@
+anomaly_features = ["revenue", "units", "marketing_spend", "discount_pct", "customer_satisfaction"]
+X_anomaly = analysis_df[anomaly_features].copy()
+
+iso = IsolationForest(contamination=0.02, random_state=RANDOM_STATE)
+analysis_df["anomaly_flag"] = iso.fit_predict(X_anomaly)
+analysis_df["is_anomaly"] = analysis_df["anomaly_flag"] == -1
+
+print(f"Flagged observations: {analysis_df['is_anomaly'].sum()} / {len(analysis_df)} "
+      f"({analysis_df['is_anomaly'].mean():.1%})")
+
+fig = px.scatter(
+    analysis_df, x="marketing_spend", y="revenue",
+    color=analysis_df["is_anomaly"].map({True: "Flagged anomaly", False: "Typical"}),
+    hover_data=["order_id", "date", "region", "category"],
+    title="Anomaly screening · Marketing spend vs revenue",
+    labels={"marketing_spend": "Marketing spend ($)", "revenue": "Revenue ($)", "color": "Observation"}
+)
+fig.update_layout(template="plotly_white")
+fig.show()
+
+display(analysis_df.loc[analysis_df["is_anomaly"],
+                        ["order_id", "date", "region", "category", "revenue"]]
+        .sort_values("revenue", ascending=False).head(15))
