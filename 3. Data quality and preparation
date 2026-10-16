@@ -1,0 +1,20 @@
+print("Data types and non-null counts")
+display(df.info())
+
+print("\nMissing values by column")
+missing = df.isna().sum().sort_values(ascending=False)
+display(missing[missing > 0].rename("missing_count").to_frame())
+
+print(f"\nDuplicate order IDs: {df['order_id'].duplicated().sum()}")
+display(df.describe(include="all").T)
+
+analysis_df = df.copy()
+numeric_cols = analysis_df.select_dtypes(include=np.number).columns.tolist()
+for col in numeric_cols:
+    analysis_df[col] = analysis_df[col].fillna(analysis_df[col].median())
+
+analysis_df["month"] = analysis_df["date"].dt.to_period("M").dt.to_timestamp()
+analysis_df["year"] = analysis_df["date"].dt.year
+analysis_df["weekday"] = analysis_df["date"].dt.day_name()
+
+print("Prepared analysis dataset:", analysis_df.shape)
