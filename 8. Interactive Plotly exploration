@@ -1,0 +1,35 @@
+from ipywidgets import interact, Dropdown
+
+def interactive_segment_view(region="All", category="All", channel="All"):
+    view = analysis_df.copy()
+    if region != "All":
+        view = view[view["region"] == region]
+    if category != "All":
+        view = view[view["category"] == category]
+    if channel != "All":
+        view = view[view["channel"] == channel]
+
+    if view.empty:
+        print("No records match these filters.")
+        return
+
+    monthly = view.groupby("month", as_index=False).agg(revenue=("revenue", "sum"), orders=("order_id", "nunique"))
+    fig = px.line(monthly, x="month", y="revenue", markers=True,
+                  title=f"Monthly revenue · {len(view):,} matching orders",
+                  labels={"month": "Month", "revenue": "Revenue ($)"})
+    fig.update_layout(template="plotly_white", hovermode="x unified")
+    fig.show()
+
+    fig2 = px.scatter(view, x="marketing_spend", y="revenue", color="category",
+                      size="units", hover_data=["region", "channel", "discount_pct"],
+                      title="Marketing spend vs revenue",
+                      labels={"marketing_spend": "Marketing spend ($)", "revenue": "Revenue ($)"})
+    fig2.update_layout(template="plotly_white")
+    fig2.show()
+
+interact(
+    interactive_segment_view,
+    region=Dropdown(options=["All"] + sorted(analysis_df["region"].unique().tolist()), value="All", description="Region"),
+    category=Dropdown(options=["All"] + sorted(analysis_df["category"].unique().tolist()), value="All", description="Category"),
+    channel=Dropdown(options=["All"] + sorted(analysis_df["channel"].unique().tolist()), value="All", description="Channel")
+);
