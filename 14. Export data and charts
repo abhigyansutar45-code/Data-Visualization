@@ -1,0 +1,27 @@
+# Export prepared data and analytical outputs
+analysis_df.to_csv("data_science_dashboard_orders.csv", index=False)
+monthly.to_csv("monthly_revenue_summary.csv", index=False)
+importance.to_csv("random_forest_feature_importance.csv", index=False)
+diagnostics.to_csv("model_test_diagnostics.csv", index=False)
+
+# Save a high-resolution static chart
+fig, ax = plt.subplots(figsize=(11, 5))
+ax.plot(monthly["month"], monthly["revenue"], marker="o", alpha=.65, label="Monthly revenue")
+ax.plot(monthly["month"], monthly["revenue_3m_avg"], linewidth=2.5, label="3-month rolling average")
+ax.set_title("Monthly Revenue Trend")
+ax.set_xlabel("Month")
+ax.set_ylabel("Revenue ($)")
+ax.legend()
+fig.tight_layout()
+fig.savefig("monthly_revenue_trend.png", dpi=180, bbox_inches="tight")
+plt.show()
+
+print("Exports created:")
+for filename in [
+    "data_science_dashboard_orders.csv",
+    "monthly_revenue_summary.csv",
+    "random_forest_feature_importance.csv",
+    "model_test_diagnostics.csv",
+    "monthly_revenue_trend.png",
+]:
+    print(" •", filename)
