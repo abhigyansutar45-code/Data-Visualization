@@ -1,0 +1,10 @@
+corr_cols = ["revenue", "units", "marketing_spend", "discount_pct", "customer_satisfaction"]
+corr = analysis_df[corr_cols].corr(numeric_only=True)
+
+plt.figure(figsize=(9, 6))
+sns.heatmap(corr, annot=True, fmt=".2f", cmap="vlag", center=0, square=True, linewidths=.5)
+plt.title("Correlation matrix · Numeric variables")
+plt.tight_layout()
+plt.show()
+
+display(corr.round(3))
