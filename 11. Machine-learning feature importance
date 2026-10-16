@@ -1,0 +1,41 @@
+model_df = analysis_df.copy()
+feature_cols = ["region", "channel", "category", "marketing_spend", "discount_pct",
+                "customer_satisfaction", "units", "month", "weekday"]
+X = model_df[feature_cols].copy()
+y = model_df["revenue"].copy()
+
+X["month"] = X["month"].dt.month
+X = pd.get_dummies(X, columns=["region", "channel", "category", "weekday"], drop_first=False)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=RANDOM_STATE
+)
+
+model = RandomForestRegressor(
+    n_estimators=250, min_samples_leaf=3, random_state=RANDOM_STATE, n_jobs=-1
+)
+model.fit(X_train, y_train)
+pred = model.predict(X_test)
+
+mae = mean_absolute_error(y_test, pred)
+rmse = np.sqrt(mean_squared_error(y_test, pred))
+r2 = r2_score(y_test, pred)
+
+print(f"Holdout MAE : ${mae:,.2f}")
+print(f"Holdout RMSE: ${rmse:,.2f}")
+print(f"Holdout R²  : {r2:.3f}")
+
+importance = pd.DataFrame({
+    "feature": X.columns,
+    "importance": model.feature_importances_
+}).sort_values("importance", ascending=False).head(15)
+
+plt.figure(figsize=(10, 6))
+sns.barplot(data=importance, x="importance", y="feature")
+plt.title("Top 15 Random Forest feature importances")
+plt.xlabel("Impurity-based importance")
+plt.ylabel("")
+plt.tight_layout()
+plt.show()
+
+display(importance)
