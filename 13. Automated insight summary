@@ -1,0 +1,18 @@
+best_region = region_rev.iloc[0]
+best_category = category_rev.iloc[0]
+best_channel = channel_avg.iloc[0]
+worst_channel = channel_avg.iloc[-1]
+peak_month = monthly.loc[monthly["revenue"].idxmax()]
+low_month = monthly.loc[monthly["revenue"].idxmin()]
+
+insights = [
+    f"**Revenue leader by region:** {best_region['region']} with ${best_region['revenue']:,.0f} in total revenue.",
+    f"**Largest category by total revenue:** {best_category['category']} with ${best_category['revenue']:,.0f}.",
+    f"**Highest average order revenue by channel:** {best_channel['channel']} (${best_channel['revenue']:,.2f} per order).",
+    f"**Lowest average order revenue by channel:** {worst_channel['channel']} (${worst_channel['revenue']:,.2f} per order).",
+    f"**Highest-revenue month:** {peak_month['month']:%B %Y} (${peak_month['revenue']:,.0f}).",
+    f"**Lowest-revenue month:** {low_month['month']:%B %Y} (${low_month['revenue']:,.0f}).",
+    f"**Anomaly screening:** {analysis_df['is_anomaly'].sum()} observations were flagged ({analysis_df['is_anomaly'].mean():.1%}).",
+    f"**Model test performance:** MAE ${mae:,.2f}; RMSE ${rmse:,.2f}; R² {r2:.3f}."
+]
+display(Markdown("\n".join(f"- {item}" for item in insights)))
