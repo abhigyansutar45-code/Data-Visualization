@@ -1,4 +1,4 @@
-# 🌍 Country GDP Data Visualization
+## 🌍 Country GDP Data Visualization
 Any problem dm me at abhigyansutar45@gmail.com
 
 A Python project that visualizes and compares the GDP (Gross Domestic Product) of different countries using charts and graphs.
